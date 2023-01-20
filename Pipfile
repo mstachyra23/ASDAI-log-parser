@@ -8,6 +8,8 @@ numpy = "*"
 pandas = "*"
 jupyter = "*"
 tk = "*"
+pyqt5 = "*"
+pyqt5-tools = "*"
 
 [dev-packages]
 
