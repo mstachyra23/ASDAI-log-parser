@@ -1,120 +1,110 @@
-import sys
-
-# QT for GUI
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, \
-                            QComboBox, QHBoxLayout, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, QEvent
-from PyQt5.QtGui import QStandardItem
-
-
-def buildExtendedRegex(data):
-    return '|'.join(data)
+import os  # used for UNIX grep command call
+import csv  # used to read and format the outfile csv
+import json  # used to format the outfile csv
+import shutil  # used for clearing temp/ after each call
+import requests  # used for grabbing url page
+import tzlocal  # used to get the local timezone for timestamp
+import datetime  # used to parse UNIX time to timestamp
+from bs4 import BeautifulSoup  # used for parsing html with topics
 
 
-def createCSV(path, data, dialect='excel'):
-    with open(path, 'w', newline='') as csvfile:
-        filewriter = csv.writer(csvfile)
-        filewriter.writerow(data)
 
-
-def grabSelected():
-    '''Returns selected logs from the Tkinter GUI dropdown (listbox).
+def processInpath(inpath):
     '''
-    return [listbox.get(i) for i in listbox.curselection()]
+    Returns inpath, converting '.' current working directory as needed.
+    '''
+    if inpath=='.':
+        return os.getcwd()
+    return inpath
 
 
-class LogComboBox(QComboBox):
-    def __init__(self):
-        super().__init__()
-        self.setEditable(True)
-        self.lineEdit().setReadOnly(True)
-        self.closeOnLineEditClick = False
-        self.lineEdit().installEventFilter(self)
-        self.view().viewport().installEventFilter(self)
-        self.model().dataChanged.connect(self.updateLineEditField)
+def getTopicsFromHTML(url):
+    '''
+    Return list of robotic drive topics parsed from the html page on pinter.
+    '''
+    try:
+        page = requests.get(url).text
+    except Exception as e:
+        page = open('roboticdrive.html', r)
+    finally:
+        soup = BeautifulSoup(page, 'html.parser')
+        parsef = lambda c : (c.isupper() or c=='_' or c=='|' or c=='(' or c==')')
+        topics = [list(tag['id']) for tag in soup.select('dt[id]')]
+        topics = [''.join(topic_chars)[6:]
+                  for topic_chars in topics 
+                  if all([parsef(char) for char in ''.join(topic_chars)[6:]])]
+        return topics
 
 
-    def eventFilter(self, widget, event):
-        if widget == self.lineEdit():
-            if event.type() == QEvent.MouseButtonRelease:
-                if self.closeOnLineEditClick:
-                    self.hidePopup()
-                else:
-                    self.showPopup()
-                return True
-            return super().eventFilter(widget, event)
-
-        if widget == self.view().viewport():
-            if event.type() == QEvent.MouseButtonRelease:
-                idx = self.view().indexAt(event.pos())
-                item = self.model().item(idx.row())
-
-                if item.checkState() == Qt.Checked:
-                    item.setCheckState(Qt.Unchecked)
-                else:
-                    item.setCheckState(Qt.Checked)
-                return True
-        return super().eventFilter(widget, event)
+def clearTemp():
+    '''
+    Removes copied log files from temp/ directory after grep is called.
+    '''
+    for filename in os.listdir('temp'):
+       file_path = os.path.join('temp', filename)
+       try:
+           if os.path.isfile(file_path) or os.path.islink(file_path):
+               os.unlink(file_path)
+           elif os.path.isdir(file_path):
+               shutil.rmtree(file_path)
+       except Exception as e:
+           print('Failed to delete %s. Reason: %s' % (file_path, e)) 
 
 
-    def hidePopup(self):
-        super().hidePopup()
-        self.startTimer(100)
+def copyFiles(inpath, logs):
+    '''
+    Copy select logs from inpath to temp/ within current directory.
+    '''
+    files = [os.path.join(inpath, log) for log in logs]
+    for f in _files:
+        shutil.copy(f, 'temp/')
 
 
-    def addItems(self, items, itemList=None):
-        for i, item in enumerate(items):
-            print(item)
-            try:
-                data = itemList[i]
-            except (TypeError, IndexError):
-                data = None
-            self.addItem(item, data)
+def UNIXgrepFiles(topics, outfile):
+    '''
+    Grep logs in temp/ for topics and move to outfile (csv). Cleans 
+      up after grep by deleting copies in temp/.
+    '''
+    regex = '|'.join(topics)
+    command = "grep -irE '{0}' temp/ > '{1}'".format(regex, 'temp.csv')
+    os.system(command)
+    clearTemp()
 
 
-    def addItem(self, text, userData=None):
-        item = QStandardItem()
-        item.setText(text)
-        if userData is not None:
-            item.setData(userData)
+def formatCSV(outfile):
+    '''
+    Format outfile csv to be human readable according to Clincal Development
+      Engineering's with headers 'Time', 'Topic', '<Topic Value 1>', '<Topic 
+      Value n>'
+    '''
+    with open('temp.csv') as readcsv, open(outfile, "w") as writecsv:
+        csvreader = csv.reader(readcsv, delimiter='\n')
+        csvwriter = csv.writer(writecsv, delimiter='\n')
+        for row in csvreader:
+            # Convert row to JSON
+            string = row[0]
+            jsonstring = string[(string.find(':')+1):]  # strip the file id
+            jsonobj = json.loads(jsonstring)
 
-        # Add checkbox functionality to each item
-        item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable)
-        item.setData(Qt.Unchecked, Qt.CheckStateRole)
-        self.model().appendRow(item)
+            # Timestamp
+            timezone = tzlocal.get_localzone() 
+            unixtime = jsonobj['packet']['timestamp']
+            timestamp = datetime.datetime.fromtimestamp(unixtime, timezone)
+
+            # Topic
 
 
-    def updateLineEditField(self):
-        text_container = []
-        for i in range(self.model().rowCount()):
-            if self.model().item(i).checkState() == Qt.Checked:
-                text_container.append(self.model().item(i).text())
-        text_string = ', '.join(text_container)
-        self.lineEdit().setText(text_string)
+            # Topic values
 
 
 
-class GUI(QWidget):
-    def __init__(self, options):
-        super().__init__()
-        self.window_width, self.window_height = 700, 300
-        self.setMinimumSize(self.window_width, self.window_height)
-        self.setStyleSheet('''
-            QWidget {
-                font-size: 15px;
-            }''')
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
-        self.setWindowTitle("ASDAI Log Parsing GUI")
 
-        # Add 2 comboboxes (for the logs and for the topics)
-        logComboBox = LogComboBox()
-        logComboBox.addItems(options)
-        self.layout.addWidget(logComboBox)
 
-        # Add button to generate CSV file
-        btn = QPushButton('Generate CSV', clicked=lambda: print(logComboBox.lineEdit().text()))
-        self.layout.addWidget(btn)
+
+
+
+
+
 
 
 
