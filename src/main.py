@@ -16,10 +16,6 @@ from gui import GUI
 
 
 if __name__ == "__main__":
-	# Launch GUI, where the user select which logs and topics.
-	#   The GUI class calls on methods in utils.py for things 
-	#   like copying files, grepping the logs, and formatting 
-	#		the csv to be human readable.
 	app = QApplication([])
 	gui = GUI()
 	gui.show()

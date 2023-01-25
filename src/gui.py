@@ -167,14 +167,3 @@ class GUI(QWidget):
         copyFiles(self.directory, self.logs)  # copy selected logs to /temp
         UNIXgrepFiles(self.topics, self.outfile)  # grep logs in /temp for topics; generate csv
         formatCSV(self.outfile)  # format the generated csv
-
-
-
-
-
-
-
-
-
-
-
