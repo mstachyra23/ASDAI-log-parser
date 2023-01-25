@@ -9,15 +9,6 @@ from bs4 import BeautifulSoup  # used for parsing html with topics
 
 
 
-def processInpath(inpath):
-    '''
-    Returns inpath, converting '.' current working directory as needed.
-    '''
-    if inpath=='.':
-        return os.getcwd()
-    return inpath
-
-
 def getTopicsFromHTML(url):
     '''
     Return list of robotic drive topics parsed from the html page on pinter.
@@ -38,7 +29,7 @@ def getTopicsFromHTML(url):
 
 def clearTemp():
     '''
-    Removes copied log files from temp/ directory after grep is called.
+    Removes copied log files from /temp directory after grep is called.
     '''
     for filename in os.listdir('temp'):
        file_path = os.path.join('temp', filename)
@@ -51,24 +42,24 @@ def clearTemp():
            print('Failed to delete %s. Reason: %s' % (file_path, e)) 
 
 
-def copyFiles(inpath, logs):
+def copyFiles(directory, logs):
     '''
-    Copy select logs from inpath to temp/ within current directory.
+    Copy select logs from inpath to /temp within current directory.
     '''
-    files = [os.path.join(inpath, log) for log in logs]
-    for f in _files:
+    files = [os.path.join(directory, log) for log in logs]
+    for f in files:
         shutil.copy(f, 'temp/')
 
 
 def UNIXgrepFiles(topics, outfile):
     '''
     Grep logs in temp/ for topics and move to outfile (csv). Cleans 
-      up after grep by deleting copies in temp/.
+      up after grep by deleting copies in /temp.
     '''
     regex = '|'.join(topics)
     command = "grep -irE '{0}' temp/ > '{1}'".format(regex, 'temp.csv')
     os.system(command)
-    clearTemp()
+    clearTemp()  # removes the copied logs from /temp as no longer needed
 
 
 def formatCSV(outfile):
