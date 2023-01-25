@@ -1,10 +1,11 @@
-import sys  # used by PyQT4 to start the GUI app
+import os  # used for generating outfile path
+import sys  # used by PyQT5 to start the GUI app
 import pathlib  # used to grab log file names for inputted path
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, \
                             QComboBox, QHBoxLayout, QVBoxLayout, QLabel, \
                             QFileDialog
-from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtCore import Qt, QEvent, QCoreApplication
 from PyQt5.QtGui import QStandardItem
 
 from utils import getTopicsFromHTML, copyFiles, UNIXgrepFiles, formatCSV
@@ -98,8 +99,8 @@ class LogComboBox(ComboBox):
         logs = self.lineEdit().text()
         logs = [log.strip() for log in logs.split(',')]
         print(f'[Logs]')
-        for l in logs:
-            print(f'{l}')
+        for l in logs: print(f'{l}')
+        print()
         return logs
 
 
@@ -111,8 +112,8 @@ class TopicComboBox(ComboBox):
         topics = self.lineEdit().text()
         topics = [topic.strip() for topic in topics.split(',')]
         print(f'[Topics]')
-        for t in topics:
-            print(f'{t}')
+        for t in topics: print(f'{t}')
+        print()
         return topics
 
 
@@ -134,7 +135,11 @@ class GUI(QWidget):
         # Add dialgoue to enter folder with logs
         self.directory = QFileDialog.getExistingDirectory(self, 'Select folder with logs')
         self.logs = [file.name for file in pathlib.Path(self.directory).glob('*.log')]
-        print(self.directory)
+
+        # Specify name of the output csv to contain the date of the logs
+        self.outfile = os.path.join(os.path.expanduser('~'), 
+            "{}_output.csv".format(self.logs[0][:8]))
+        os.system("touch {0}".format(self.outfile))
 
         # Add drop down for logs
         self.logLabel = QLabel("Select logs", self)
@@ -148,6 +153,7 @@ class GUI(QWidget):
 
         # Add button to generate CSV file
         self.btn = QPushButton('Generate CSV', clicked = self.generateCSV)
+        self.closebtn = QPushButton('Exit', clicked = self.closeApp)
 
 
         # Configure layout with 2 drop downs and 1 button
@@ -157,8 +163,14 @@ class GUI(QWidget):
         self.layout.addWidget(self.topicLabel)
         self.layout.addWidget(self.topicComboBox)
         self.layout.addWidget(self.btn)
+        self.layout.addWidget(self.closebtn)
         self.layout.setSpacing(15)
         self.setLayout(self.layout)
+
+
+    def closeApp(self):
+        self.closebtn.clicked.connect(QCoreApplication.instance().quit)
+        self.closebtn.clicked.connect(self.close)
 
 
     def generateCSV(self):

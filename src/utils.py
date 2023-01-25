@@ -13,10 +13,12 @@ def getTopicsFromHTML(url):
     '''Return list of robotic drive topics parsed from the html page on pinter.
     '''
     try:
+        # get html page
         page = requests.get(url).text
-    except Exception as e:
+    except Exception as e:  # when no access to pinter / VPN 
         page = open('roboticdrive.html', r)
     finally:
+        # parse html page and extract the topics from the dt tags
         soup = BeautifulSoup(page, 'html.parser')
         parsef = lambda c:(c.isupper() or c=='_' or c=='|' or c=='(' or c==')')
         topics = [list(tag['id']) for tag in soup.select('dt[id]')]
@@ -29,14 +31,14 @@ def getTopicsFromHTML(url):
 def clearTemp():
     '''Removes copied log files from /temp directory after grep is called.
     '''
-    for filename in os.listdir('temp'):
-       file_path = os.path.join('temp', filename)
-       try:
+    for filename in os.listdir(os.path.join(os.getcwd(), '..', 'temp')):
+        file_path = os.path.join(os.getcwd(), '..', 'temp', filename)
+        try:
            if os.path.isfile(file_path) or os.path.islink(file_path):
                os.unlink(file_path)
            elif os.path.isdir(file_path):
                shutil.rmtree(file_path)
-       except Exception as e:
+        except Exception as e:
            print('Failed to delete %s. Reason: %s' % (file_path, e)) 
 
 
@@ -54,7 +56,8 @@ def UNIXgrepFiles(topics, outfile):
         up after grep by deleting copies in /temp.
     '''
     regex = '|'.join(topics)
-    command = "grep -irE '{0}' temp/ > '{1}'".format(regex, 'temp.csv')
+    searchpath = os.path.join(os.getcwd(), '..', 'temp')
+    command = "grep -irE '{0}' {1} > '{2}'".format(regex, searchpath, outfile)
     os.system(command)
     clearTemp()  # removes the copied logs from /temp as no longer needed
 
@@ -69,7 +72,7 @@ def formatCSV(outfile):
     rowstowrite = []
 
     # Read grepped csv and extract topics and values
-    with open('temp.csv') as readcsv:
+    with open(outfile) as readcsv:
         csvreader = csv.reader(readcsv, delimiter='\n')
         for row in csvreader:
             # Generate JSON
@@ -80,7 +83,7 @@ def formatCSV(outfile):
             # Get topic and values
             timestamp = datetime.datetime.fromtimestamp(
                 jsonobj['packet']['timestamp'], 
-                tzlocal.get_localzone())
+                tzlocal.get_localzone()).strftime("%H:%M:%S")
             topic = jsonobj['packet']['topic']
             f = lambda k : k!="sender_id" and k!="timestamp"  # filter
             packetdict = {k:v for k,v in jsonobj['packet'].items() if f(k)}
@@ -93,14 +96,15 @@ def formatCSV(outfile):
 
             # Store new row to be written to csv
             rowstowrite.append(
-                generateRowForCSV(header, timestamp, topic, values))
+                generateRowForCSV(header, timestamp, topic, packetdict))
 
     # Write topics and values
     with open(outfile, "w") as writecsv:
-        csvwriter = csv.writer(writecsv, delimiter='\n')
+        csvwriter = csv.writer(writecsv, delimiter=',')
+        csvwriter.writerow(header)
         for row in rowstowrite:
-            csvrow = ', '.join(row)  # csv format
-            writer.writerow(row)
+            csvwriter.writerow(row)
+    print(f'[Log] Csv written to {outfile}.')
 
 
 def generateRowForCSV(header, timestamp, topic, packetdict):
@@ -115,9 +119,10 @@ def generateRowForCSV(header, timestamp, topic, packetdict):
                                |
                             spacers to align values to col header pos
     '''
-    spacers = ',' * (header.index(firstkey) - 1) 
-    values = list(packetdict.values())
-    return ','.join([timestamp, topic, spacers, ','.join(values)])
+    spacers = ',' * (header.index(list(packetdict.keys())[0]) - 1)  # some n ','
+    values = list(packetdict.values())  # packet values by col header
+    values = [str(v) for v in values]  # need to be strings for join() to work
+    return [timestamp, topic, spacers, ','.join(values).lstrip(',')]
 
 
 
