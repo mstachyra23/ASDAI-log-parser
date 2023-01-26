@@ -61,7 +61,7 @@ def copyFiles(directory, logs):
     fpairs = [[os.path.join(directory, log), log] for log in logs]
     for fp in fpairs:
         path = os.path.join(directory, 'temp', fp[1])
-        shutil.copy(fp[0], os.path.join(directory, 'temp', fp[1]))
+        shutil.copy(fp[0], os.path.join(os.getcwd(), '..', 'temp', fp[1]))
 
 
 def UNIXgrepFiles(topics, outfile):
@@ -117,7 +117,9 @@ def formatCSV(outfile):
         csvwriter.writerow(header)
         for row in rowstowrite:
             csvwriter.writerow(row)
-    print(f'[Log] Csv written to {outfile}.')
+    print(f'[INFO] Csv written to {outfile}.')
+    print(f'[INFO] Ready to generate another CSV. Otherwise, Exit.')
+
 
 
 def generateRowForCSV(header, timestamp, topic, packetdict):
@@ -132,13 +134,26 @@ def generateRowForCSV(header, timestamp, topic, packetdict):
                                |
                             spacers to align values to col header pos
     '''
-    spacers = ['n/a' * (header.index(list(packetdict.keys())[0]) - 2)]
-    values = list(packetdict.values())  # packet values by col header
-    values = [str(v) for v in values]  # need to be strings for join() to work
-    row = [timestamp, topic]
-    if len(spacers)>1: row.extend(spacers)
-    row.extend(values)
-    return row
+    try:
+        # key used to get position in header where to start appending values
+        uniqueKey = list(packetdict.keys())[0]  
+
+        # spacers are 'n/a' in header col positions of irelevant values
+        spacers = ['n/a'] * (header.index(uniqueKey) - 2) # -2 (timestamp, topic)
+
+        # get values and convert to string for join
+        values = list(packetdict.values())  # packetdict values by col header
+        values = [str(v) for v in values]  
+
+        # generate row 
+        row = [timestamp, topic]
+        row.extend(spacers) 
+        row.extend(values)
+
+        return row
+    except Exception as e:
+        print(f"Failed to generate row for CSV. Exception: {e}. Thrown for \
+            {topic} with values {packetdict}.")
 
 
 

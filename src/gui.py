@@ -98,9 +98,8 @@ class LogComboBox(ComboBox):
     def returnLogs(self):
         logs = self.lineEdit().text()
         logs = [log.strip() for log in logs.split(',')]
-        print(f'[Logs]')
+        print(f'[LOGS]')
         for l in logs: print(f'{l}')
-        print()
         return logs
 
 
@@ -111,9 +110,8 @@ class TopicComboBox(ComboBox):
     def returnTopics(self):
         topics = self.lineEdit().text()
         topics = [topic.strip() for topic in topics.split(',')]
-        print(f'[Topics]')
+        print(f'[TOPICS]')
         for t in topics: print(f'{t}')
-        print()
         return topics
 
 
@@ -123,6 +121,7 @@ class GUI(QWidget):
         self.app = app
         self.url = 'http://pinter.local/doc/roboticdrive/master/ipc.html'
         self.topics = getTopicsFromHTML(self.url)
+        self.generated = 0
 
         # Specify GUI window
         self.setContentsMargins(20, 20, 20, 20) 
@@ -139,7 +138,7 @@ class GUI(QWidget):
 
         # Specify name of the output csv to contain the date of the logs
         self.outfile = os.path.join(os.path.expanduser('~'), 
-            "{}_output.csv".format(self.logs[0][:8]))
+            "{0}_output_{1}.csv".format(self.logs[0][:10], self.generated))
         os.system("touch {0}".format(self.outfile))
 
         # Add drop down for logs
@@ -174,6 +173,7 @@ class GUI(QWidget):
 
 
     def generateCSV(self):
+        self.generated += 1
         self.logs = self.logComboBox.returnLogs()
         self.topics = self.topicComboBox.returnTopics()
         copyFiles(self.directory, self.logs)  # copy selected logs to /temp
