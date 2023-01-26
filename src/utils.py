@@ -13,18 +13,31 @@ def getTopicsFromHTML(url):
     '''Return list of robotic drive topics parsed from the html page on pinter.
     '''
     try:
-        # get html page
-        page = requests.get(url).text
+        page = requests.get(url).text # get html page
     except Exception as e:  # when no access to pinter / VPN 
         page = open('roboticdrive.html', r)
     finally:
         # parse html page and extract the topics from the dt tags
         soup = BeautifulSoup(page, 'html.parser')
-        parsef = lambda c:(c.isupper() or c=='_' or c=='|' or c=='(' or c==')')
-        topics = [list(tag['id']) for tag in soup.select('dt[id]')]
-        topics = [''.join(topic_chars)[6:]
-                  for topic_chars in topics 
-                  if all([parsef(char) for char in ''.join(topic_chars)[6:]])]
+        topics = [''.join(list(tag['id']))[6:] for tag in soup.select('dt[id]')]
+
+        # remove strings that aren't topics
+        filtf = lambda c:(c.isupper() or c=='_' or c=='|' or c=='(' or c==')')
+        topics = [''.join(chars)
+                  for chars in topics
+                  if all([filtf(c) for c in ''.join(chars)])]
+
+        # split combined topics, e.g., ROBOT_(ARM|CAMERA|SUPPORT)_COUNTERS
+        for chars in topics:
+            if "|" in chars:
+                lpart = chars.find("(")
+                rpart = chars.rfind(")")
+                mparts = chars[lpart+1:rpart].split("|")
+                splittopics = ["{0}{1}{2}".format(chars[:lpart], p, chars[rpart+1:]) 
+                               for p in mparts]  
+                topics.extend(splittopics)
+        topics = [topic for topic in topics if "|" not in topic]
+
         return topics
 
 
@@ -85,7 +98,7 @@ def formatCSV(outfile):
                 jsonobj['packet']['timestamp'], 
                 tzlocal.get_localzone()).strftime("%H:%M:%S")
             topic = jsonobj['packet']['topic']
-            f = lambda k : k!="sender_id" and k!="timestamp"  # filter
+            f = lambda k : k!="sender_id" and k!="timestamp" and k!="topic"
             packetdict = {k:v for k,v in jsonobj['packet'].items() if f(k)}
 
             # Add topic values to column headers if new topic
@@ -119,10 +132,14 @@ def generateRowForCSV(header, timestamp, topic, packetdict):
                                |
                             spacers to align values to col header pos
     '''
-    spacers = ',' * (header.index(list(packetdict.keys())[0]) - 1)  # some n ','
+    spacers = ['n/a' * (header.index(list(packetdict.keys())[0]) - 2)]
     values = list(packetdict.values())  # packet values by col header
     values = [str(v) for v in values]  # need to be strings for join() to work
-    return [timestamp, topic, spacers, ','.join(values).lstrip(',')]
+    row = [timestamp, topic]
+    if len(spacers)>1: row.extend(spacers)
+    row.extend(values)
+    return row
+
 
 
 

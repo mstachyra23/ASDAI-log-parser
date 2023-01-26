@@ -17,6 +17,6 @@ from gui import GUI
 
 if __name__ == "__main__":
 	app = QApplication([])
-	gui = GUI()
+	gui = GUI(app)
 	gui.show()
 	app.exec()

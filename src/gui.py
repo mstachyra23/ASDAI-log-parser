@@ -118,8 +118,9 @@ class TopicComboBox(ComboBox):
 
 
 class GUI(QWidget):
-    def __init__(self):
+    def __init__(self, app):
         super().__init__()
+        self.app = app
         self.url = 'http://pinter.local/doc/roboticdrive/master/ipc.html'
         self.topics = getTopicsFromHTML(self.url)
 
@@ -169,8 +170,7 @@ class GUI(QWidget):
 
 
     def closeApp(self):
-        self.closebtn.clicked.connect(QCoreApplication.instance().quit)
-        self.closebtn.clicked.connect(self.close)
+        self.app.quit()
 
 
     def generateCSV(self):
