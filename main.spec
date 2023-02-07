@@ -5,7 +5,11 @@ block_cipher = None
 
 
 a = Analysis(
+<<<<<<< HEAD
     ['src\\main.py'],
+=======
+    ['main.py'],
+>>>>>>> 03a4c526293281808a5c151396bc0cd79ecbb4c8
     pathex=[],
     binaries=[],
     datas=[],

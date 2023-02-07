@@ -163,5 +163,3 @@ def generateRowForCSV(header, timestamp, topic, packetdict):
     except Exception as e:
         print(f"Failed to generate row for CSV. Exception: {e}. Thrown for \
             {topic} with values {packetdict}.")
-
-

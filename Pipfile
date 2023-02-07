@@ -12,8 +12,11 @@ pyqt5 = "*"
 pyqt5-tools = "*"
 tzlocal = "*"
 pyinstaller = "*"
+<<<<<<< HEAD
 pywin32-ctypes = "*"
 requests = "*"
+=======
+>>>>>>> 03a4c526293281808a5c151396bc0cd79ecbb4c8
 
 [dev-packages]
 
