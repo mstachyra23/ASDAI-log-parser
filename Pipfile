@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "*"
+pandas = "*"
+jupyter = "*"
+tk = "*"
+pyqt5 = "*"
+pyqt5-tools = "*"
+tzlocal = "*"
+pyinstaller = "*"
+pywin32-ctypes = "*"
+requests = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"

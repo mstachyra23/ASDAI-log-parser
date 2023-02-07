@@ -1,0 +1,21 @@
+@import url("alabaster.css");
+
+tt.descname, tt.descclassname, code.descname, code.descclassname {
+    font-size: 120%;
+}
+ 
+dl {
+    padding: 0;
+    margin-bottom: 35px;
+}
+ 
+.strike {
+  text-decoration: line-through;
+  color: #F00;
+  background-color: #FCC;
+}
+
+.add {
+  color: #00F;
+  background-color: #CCF;
+}
