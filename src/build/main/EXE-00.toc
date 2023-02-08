@@ -3956,7 +3956,7 @@
  [],
  False,
  False,
- 1675875125,
+ 1675875271,
  [('run.exe',
    'C:\\Users\\User\\.virtualenvs\\ASDAI-log-parser-fDtSAgQy\\lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\run.exe',
    'EXECUTABLE')])
