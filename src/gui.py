@@ -23,7 +23,6 @@ class ComboBox(QComboBox):
         self.model().dataChanged.connect(self.updateLineEditField)
         name = "Select logs"
         self.setAccessibleName(name)
-        get_name = self.accessibleName()
         label = QLabel(self.accessibleName(), self)
         label.setGeometry(200, 100, 200, 30) 
 
@@ -185,5 +184,5 @@ class GUI(QWidget):
         copyFiles(self.logsdir, # src
                   os.path.join(self.root, 'temp'), # dest
                   self.logs)  # logs to move from 'src' to 'dest'
-        filterLogs(self.topics, self.outfile)  # grep logs in /temp for topics; generate csv
+        filterLogs(self.root, self.topics, self.outfile)  # grep logs in /temp for topics; generate csv
         formatCSV(self.outfile)  # format the generated csv

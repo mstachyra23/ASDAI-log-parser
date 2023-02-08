@@ -42,11 +42,13 @@ def getTopicsFromHTML(url):
         return topics
 
 
-def clearTemp():
-    '''Removes copied log files from /temp directory after grep is called.
+def clearTemp(root):
+    '''Removes copied log files from /temp directory after grep (Linux) 
+        or findstr (Windows) is called.
     '''
-    for filename in os.listdir(os.path.join(os.getcwd(), '..', 'temp')):
-        file_path = os.path.join(os.getcwd(), '..', 'temp', filename)
+    temp = os.path.join(root, 'temp')
+    for filename in os.listdir(temp):
+        file_path = os.path.join(temp, filename)
         try:
            if os.path.isfile(file_path) or os.path.islink(file_path):
                os.unlink(file_path)
@@ -55,10 +57,15 @@ def clearTemp():
         except Exception as e:
            print('Failed to delete %s. Reason: %s' % (file_path, e)) 
 
+    # check temp folder is cleared
+    temp_files = [f for f in os.listdir(temp)]
+    assert len(temp_files)==0, "Clearing temp folder failed."
+
 
 def copyFiles(src, dest, logs):
     '''Copy logs to temp folder (dest) from src. Creates temp folder if it doesn't exist.
     '''
+    dest_copy = dest
     if not os.path.exists(dest):
         print(f"[INFO] {dest} didn't exist. Created.")
         os.makedirs(dest)
@@ -68,20 +75,28 @@ def copyFiles(src, dest, logs):
     for src, dest in src_dest_pairs:
         shutil.copy(src, dest)
 
+    # check files are copied correctly
+    copied = [f for f in os.listdir(dest_copy)]
+    assert len(copied)!=0, "Copying logs failed."
+    assert logs==copied, "Copyling logs failed."
 
-def filterLogs(topics, outfile):
+
+def filterLogs(root, topics, outfile):
     '''Filters logs in temp/ for topics and move to outfile (csv). Cleans 
         up after filter by deleting copies in /temp. If Windows, runs "Findstr" command;
         if Linux, runs "grep" command.
     '''
-    regex = '|'.join(topics)
-    searchpath = os.path.join(os.getcwd(), '..', 'temp')
+    print(f"[INFO] {platform.system()} operating system detected.")
     if platform.system()=="Windows":
-        command = "Findstr /R '{0}' '{1}' > '{2}'".format(regex, searchpath, outfile)
+        searchpath = os.path.join(root, 'temp', '*')
+        regex = ' '.join(topics)
+        regex = '"' + regex + '"'
+        command = "findstr {0} {1} > {2}".format(regex, searchpath, outfile)
     else:
+        regex = '|'.join(topics)
         command = "grep -irE '{0}' {1} > '{2}'".format(regex, searchpath, outfile)
     os.system(command)
-    clearTemp()  # removes the copied logs from /temp as no longer needed
+    clearTemp(root)  # removes the copied logs from /temp as no longer needed
 
 
 def formatCSV(outfile):
@@ -99,7 +114,7 @@ def formatCSV(outfile):
         for row in csvreader:
             # Generate JSON
             string = row[0]
-            jsonstring = string[(string.find(':')+1):]  # strip the file id
+            jsonstring = string[(string.find('{')):]  # strip the file id
             jsonobj = json.loads(jsonstring)
 
             # Get topic and values
@@ -126,9 +141,7 @@ def formatCSV(outfile):
         csvwriter.writerow(header)
         for row in rowstowrite:
             csvwriter.writerow(row)
-    print(f'[INFO] Csv written to {outfile}.')
-    print(f'[INFO] Ready to generate another CSV. Otherwise, Exit.')
-
+    print(f'[INFO] Csv written to {outfile}. Ready to generate another csv.')
 
 
 def generateRowForCSV(header, timestamp, topic, packetdict):
