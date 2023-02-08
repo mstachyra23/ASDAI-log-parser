@@ -16,7 +16,7 @@ def getTopicsFromHTML(url):
     try:
         page = requests.get(url).text # get html page
     except Exception as e:  # when no access to pinter / VPN 
-        page = open('roboticdrive.html', "r")
+        page = open("roboticdrive.html", "r", encoding="utf8")
     finally:
         # parse html page and extract the topics from the dt tags
         soup = BeautifulSoup(page, 'html.parser')
