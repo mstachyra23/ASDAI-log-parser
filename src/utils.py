@@ -10,13 +10,17 @@ from bs4 import BeautifulSoup  # used for parsing html with topics
 
 
 
-def getTopicsFromHTML(url):
+def getTopicsFromHTML(url, html='roboticdrive.html'):
     '''Return list of robotic drive topics parsed from the html page on pinter.
     '''
     try:
         page = requests.get(url).text # get html page
+        print(f"[INFO] Retrieved robotic drive topics from url.")
     except Exception as e:  # when no access to pinter / VPN 
-        page = open("roboticdrive.html", "r", encoding="utf8")
+        srcpath = os.path.dirname(os.path.abspath(__file__))
+        htmlpath = os.path.join(srcpath, html)
+        page = open(htmlpath, encoding='utf8').read()
+        print(f"[INFO] Retrieved robotic drive topics from static file.")
     finally:
         # parse html page and extract the topics from the dt tags
         soup = BeautifulSoup(page, 'html.parser')
@@ -28,7 +32,7 @@ def getTopicsFromHTML(url):
                   for chars in topics
                   if all([filtf(c) for c in ''.join(chars)])]
 
-        # split combined topics, e.g., ROBOT_(ARM|CAMERA|SUPPORT)_COUNTERS
+        # generate topics from combinations, e.g., ROBOT_(ARM|CAMERA|SUPPORT)_COUNTERS
         for chars in topics:
             if "|" in chars:
                 lpart = chars.find("(")
