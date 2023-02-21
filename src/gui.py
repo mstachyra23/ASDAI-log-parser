@@ -163,7 +163,7 @@ class GUI(QWidget):
 
 
         # Configure layout with 2 drop downs and 1 button
-        self.layout = QVBoxLayout()
+        self.layout = QVBoxLayout()  # vertical layout
         self.layout.addWidget(self.logLabel)
         self.layout.addWidget(self.logComboBox)
         self.layout.addWidget(self.topicLabel)
